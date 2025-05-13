@@ -11,34 +11,61 @@ from flask import Flask, send_from_directory, request, jsonify
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
 
-# app.register_blueprint(user_bp, url_prefix='/api') # Keep this if user routes are separate
-
-# Yahoo Finance API base URL (v8 is commonly used)
+# Yahoo Finance API base URL
 YAHOO_FINANCE_CHART_API_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 
 @app.route('/api/search_asset', methods=['GET'])
 def search_asset_api():
-    symbol = request.args.get('symbol')
-    if not symbol:
+    symbol_input = request.args.get('symbol')
+    if not symbol_input:
         return jsonify({'error': 'Símbolo do ativo não fornecido'}), 400
 
-    # Parameters for Yahoo Finance API (matching what ApiClient might have used)
-    params = {
-        'region': request.args.get('region', 'US'), # Default to US if not provided
-        'interval': request.args.get('interval', '1d'),
-        'range': request.args.get('range', '1d'),
-        'includeAdjustedClose': request.args.get('includeAdjustedClose', 'true'),
-        'events': 'div,split,capitalGains', # Common events
-        'lang': 'pt-BR' # Or 'en-US'
-    }
-
+    # Prepare for API call
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
+    
+    # Default parameters
+    base_params = {
+        'interval': request.args.get('interval', '1d'),
+        'range': request.args.get('range', '1d'),
+        'includeAdjustedClose': request.args.get('includeAdjustedClose', 'true'),
+        'events': 'div,split,capitalGains',
+        'lang': 'pt-BR'
+    }
+
+    # Attempt 1: Determine region based on suffix or default to US
+    symbol_to_query = symbol_input.upper()
+    query_region = 'US' # Default
+
+    if '.' in symbol_to_query:
+        market_suffix = symbol_to_query.split('.')[-1]
+        if market_suffix == 'SA':
+            query_region = 'BR'
+    
+    current_params = base_params.copy()
+    current_params['region'] = query_region
+    
+    api_url = YAHOO_FINANCE_CHART_API_URL.format(symbol=symbol_to_query)
+    app.logger.info(f"Attempt 1: Querying {api_url} with params {current_params}")
+    response = requests.get(api_url, params=current_params, headers=headers)
+
+    # Attempt 2: If Attempt 1 failed with 404 for a non-suffixed symbol tried as US, try as Brazilian (.SA)
+    if response.status_code == 404 and '.' not in symbol_input and query_region == 'US':
+        app.logger.info(f"Attempt 1 for {symbol_input} (region US) failed with 404. Retrying as Brazilian asset.")
+        symbol_to_query_br = symbol_input.upper() + ".SA"
+        query_region_br = 'BR'
+        
+        current_params_br = base_params.copy()
+        current_params_br['region'] = query_region_br
+        
+        api_url_br = YAHOO_FINANCE_CHART_API_URL.format(symbol=symbol_to_query_br)
+        app.logger.info(f"Attempt 2: Querying {api_url_br} with params {current_params_br}")
+        response = requests.get(api_url_br, params=current_params_br, headers=headers)
+        if response.ok:
+            symbol_to_query = symbol_to_query_br # Update symbol if BR attempt is successful
 
     try:
-        api_url = YAHOO_FINANCE_CHART_API_URL.format(symbol=symbol)
-        response = requests.get(api_url, params=params, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
         chart_data = response.json()
         
@@ -48,14 +75,12 @@ def search_asset_api():
             indicators = chart_data['chart']['result'][0].get('indicators', {})
             quote = indicators.get('quote', [{}])[0]
             
-            asset_info['symbol'] = meta.get('symbol')
+            asset_info['symbol'] = meta.get('symbol') # This should be the canonical symbol from API
             asset_info['name'] = meta.get('shortName', meta.get('longName', 'N/A'))
             asset_info['price'] = meta.get('regularMarketPrice', 'N/A')
-            asset_info['currency'] = meta.get('currency', '')
+            asset_info['currency'] = meta.get('currency', ">")
             
-            # Calculate change and change_percent if possible
             current_price_list = quote.get('close', [])
-            # Get the last valid price from the list, ignoring None values at the end
             last_valid_price = None
             if current_price_list:
                 for price_val in reversed(current_price_list):
@@ -85,19 +110,29 @@ def search_asset_api():
 
         else:
             error_details = chart_data.get('chart', {}).get('error')
-            if error_details:
-                return jsonify({'error': f"Não foi possível obter dados do gráfico para o símbolo: {symbol}. Detalhes: {error_details.get('description', 'Erro desconhecido da API')}"}), 404
-            return jsonify({'error': f"Não foi possível obter dados do gráfico para o símbolo: {symbol}. Resposta inesperada da API."}), 404
+            error_description = 'Resposta inesperada da API.'
+            if error_details and isinstance(error_details, dict):
+                 error_description = error_details.get('description', 'Erro desconhecido da API')
+            elif isinstance(error_details, str):
+                error_description = error_details
+            return jsonify({'error': f"Não foi possível obter dados do gráfico para o símbolo: {symbol_input}. Detalhes: {error_description}"}), 404
 
         return jsonify(asset_info)
 
     except requests.exceptions.HTTPError as http_err:
-        return jsonify({'error': f'Erro HTTP ao buscar dados do ativo: {http_err}', 'details': response.text if response else 'Sem resposta'}), response.status_code
+        # Try to parse error from Yahoo Finance if possible
+        error_message = f'Erro HTTP ao buscar dados do ativo: {http_err}'
+        try:
+            error_data = response.json()
+            if error_data.get('chart') and error_data['chart'].get('error') and error_data['chart']['error'].get('description'):
+                error_message = f"Erro da API Finance: {error_data['chart']['error']['description']}"
+        except ValueError: # response.json() fails if not json
+            pass
+        return jsonify({'error': error_message, 'details': response.text if response else 'Sem resposta detalhada'}), response.status_code if response else 500
     except requests.exceptions.RequestException as req_err:
         return jsonify({'error': f'Erro de requisição ao buscar dados do ativo: {req_err}'}), 500
     except Exception as e:
-        # Log the full error for debugging on the server side
-        app.logger.error(f"Error processing YahooFinance API for symbol {symbol}: {e}", exc_info=True)
+        app.logger.error(f"Error processing YahooFinance API for symbol {symbol_input}: {e}", exc_info=True)
         return jsonify({'error': 'Erro interno ao processar dados do ativo.', 'details': str(e)}), 500
 
 @app.route('/', defaults={'path': ''})
@@ -117,5 +152,5 @@ def serve(path):
             return "index.html not found", 404
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False) # Set debug=False for production-like testing
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
