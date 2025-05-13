@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - SmartGrana</title>
+    <link rel="stylesheet" href="{{ url_for("static", filename="style.css") }}">
+</head>
+<body>
+    <header>
+        <h1>SmartGrana</h1>
+        <nav>
+            <a href="/">Início</a>
+            <a href="/profile">Meu Perfil</a> 
+            <a href="#">Logout</a> <!-- Ação de logout será implementada -->
+        </nav>
+    </header>
+    <main>
+        <h2>Meu Perfil</h2>
+        <p>Olá, [Nome do Usuário]!</p> <!-- Nome será dinâmico -->
+        <p>Email: [email@example.com]</p> <!-- Email será dinâmico -->
+        
+        <section>
+            <h3>Minhas Preferências (Exemplo)</h3>
+            <p>Aqui você poderá configurar suas preferências de investimento, notificações, etc.</p>
+            <!-- Conteúdo do perfil virá aqui -->
+        </section>
+        
+        <section>
+            <h3>Alterar Senha (Exemplo)</h3>
+            <form action="#" method="post"> <!-- Ação será implementada depois -->
+                <div>
+                    <label for="current_password">Senha Atual:</label>
+                    <input type="password" id="current_password" name="current_password">
+                </div>
+                <div>
+                    <label for="new_password">Nova Senha:</label>
+                    <input type="password" id="new_password" name="new_password">
+                </div>
+                <div>
+                    <label for="confirm_new_password">Confirmar Nova Senha:</label>
+                    <input type="password" id="confirm_new_password" name="confirm_new_password">
+                </div>
+                <button type="submit">Alterar Senha</button>
+            </form>
+        </section>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 SmartGrana. Todos os direitos reservados.</p>
+    </footer>
+</body>
+</html>
