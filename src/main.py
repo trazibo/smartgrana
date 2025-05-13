@@ -3,25 +3,18 @@ import sys
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+import requests # Import requests library
 from flask import Flask, send_from_directory, request, jsonify
-from src.models.user import db # Assuming this might be used later
-from src.routes.user import user_bp # Assuming this might be used later
-
-# Import ApiClient
-sys.path.append('/opt/.manus/.sandbox-runtime')
-from data_api import ApiClient
+# from src.models.user import db # Assuming this might be used later
+# from src.routes.user import user_bp # Assuming this might be used later
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
 
 # app.register_blueprint(user_bp, url_prefix='/api') # Keep this if user routes are separate
 
-# Database setup (currently commented out, keep as is unless DB is needed now)
-# app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{os.getenv('DB_USERNAME', 'root')}:{os.getenv('DB_PASSWORD', 'password')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_NAME', 'mydb')}"
-# app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# db.init_app(app)
-# with app.app_context():
-#     db.create_all()
+# Yahoo Finance API base URL (v8 is commonly used)
+YAHOO_FINANCE_CHART_API_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 
 @app.route('/api/search_asset', methods=['GET'])
 def search_asset_api():
@@ -29,10 +22,25 @@ def search_asset_api():
     if not symbol:
         return jsonify({'error': 'Símbolo do ativo não fornecido'}), 400
 
-    client = ApiClient()
+    # Parameters for Yahoo Finance API (matching what ApiClient might have used)
+    params = {
+        'region': request.args.get('region', 'US'), # Default to US if not provided
+        'interval': request.args.get('interval', '1d'),
+        'range': request.args.get('range', '1d'),
+        'includeAdjustedClose': request.args.get('includeAdjustedClose', 'true'),
+        'events': 'div,split,capitalGains', # Common events
+        'lang': 'pt-BR' # Or 'en-US'
+    }
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+
     try:
-        # Fetch chart data (includes price, variation, volume)
-        chart_data = client.call_api('YahooFinance/get_stock_chart', query={'symbol': symbol, 'region': 'US', 'interval': '1d', 'range': '1d', 'includeAdjustedClose': 'true'})
+        api_url = YAHOO_FINANCE_CHART_API_URL.format(symbol=symbol)
+        response = requests.get(api_url, params=params, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
+        chart_data = response.json()
         
         asset_info = {}
         if chart_data and chart_data.get('chart') and chart_data['chart'].get('result'):
@@ -45,40 +53,52 @@ def search_asset_api():
             asset_info['price'] = meta.get('regularMarketPrice', 'N/A')
             asset_info['currency'] = meta.get('currency', '')
             
-            if quote.get('close') and len(quote['close']) > 0 and meta.get('chartPreviousClose'):
-                current_price = quote['close'][-1]
-                previous_close = meta['chartPreviousClose']
-                if current_price is not None and previous_close is not None and previous_close != 0:
-                    change = current_price - previous_close
-                    change_percent = (change / previous_close) * 100
-                    asset_info['change'] = round(change, 2)
-                    asset_info['change_percent'] = round(change_percent, 2)
-                else:
-                    asset_info['change'] = 'N/A'
-                    asset_info['change_percent'] = 'N/A'
+            # Calculate change and change_percent if possible
+            current_price_list = quote.get('close', [])
+            # Get the last valid price from the list, ignoring None values at the end
+            last_valid_price = None
+            if current_price_list:
+                for price_val in reversed(current_price_list):
+                    if price_val is not None:
+                        last_valid_price = price_val
+                        break
+            
+            previous_close = meta.get('chartPreviousClose')
+
+            if last_valid_price is not None and previous_close is not None and previous_close != 0:
+                change = last_valid_price - previous_close
+                change_percent = (change / previous_close) * 100
+                asset_info['change'] = round(change, 2)
+                asset_info['change_percent'] = round(change_percent, 2)
             else:
                 asset_info['change'] = 'N/A'
                 asset_info['change_percent'] = 'N/A'
 
-            if quote.get('volume') and len(quote['volume']) > 0:
-                asset_info['volume'] = quote['volume'][-1]
-            else:
-                asset_info['volume'] = 'N/A'
-        else:
-            return jsonify({'error': 'Não foi possível obter dados do gráfico para o símbolo: ' + symbol, 'details': chart_data.get('chart', {}).get('error')}), 404
+            volume_list = quote.get('volume', [])
+            last_valid_volume = None
+            if volume_list:
+                for vol_val in reversed(volume_list):
+                    if vol_val is not None:
+                        last_valid_volume = vol_val
+                        break
+            asset_info['volume'] = last_valid_volume if last_valid_volume is not None else 'N/A'
 
-        # Fetch insights data (optional, can be added later or if needed)
-        # insights_data = client.call_api('YahooFinance/get_stock_insights', query={'symbol': symbol})
-        # if insights_data and insights_data.get('finance') and insights_data['finance'].get('result'):
-        #    asset_info['insights'] = insights_data['finance']['result'].get('instrumentInfo', {}).get('technicalEvents', {}).get('shortTermOutlook', {}).get('stateDescription', 'N/A')
-        # else:
-        #    asset_info['insights'] = 'N/A'
+        else:
+            error_details = chart_data.get('chart', {}).get('error')
+            if error_details:
+                return jsonify({'error': f"Não foi possível obter dados do gráfico para o símbolo: {symbol}. Detalhes: {error_details.get('description', 'Erro desconhecido da API')}"}), 404
+            return jsonify({'error': f"Não foi possível obter dados do gráfico para o símbolo: {symbol}. Resposta inesperada da API."}), 404
 
         return jsonify(asset_info)
 
+    except requests.exceptions.HTTPError as http_err:
+        return jsonify({'error': f'Erro HTTP ao buscar dados do ativo: {http_err}', 'details': response.text if response else 'Sem resposta'}), response.status_code
+    except requests.exceptions.RequestException as req_err:
+        return jsonify({'error': f'Erro de requisição ao buscar dados do ativo: {req_err}'}), 500
     except Exception as e:
-        print(f"Error calling YahooFinance API: {e}")
-        return jsonify({'error': 'Erro ao buscar dados do ativo.', 'details': str(e)}), 500
+        # Log the full error for debugging on the server side
+        app.logger.error(f"Error processing YahooFinance API for symbol {symbol}: {e}", exc_info=True)
+        return jsonify({'error': 'Erro interno ao processar dados do ativo.', 'details': str(e)}), 500
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -97,5 +117,5 @@ def serve(path):
             return "index.html not found", 404
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False) # Set debug=False for production-like testing
 

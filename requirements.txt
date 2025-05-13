@@ -4,3 +4,4 @@ PyMySQL==1.1.1
 SQLAlchemy==2.0.40
 cryptography==36.0.2
 gunicorn
+requests
