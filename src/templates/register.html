@@ -41,16 +41,20 @@
             outline: none; /* Remover outline padrão no foco */
         }
         .phone-container input[type="tel"],
-        .location-fields input[type="text"] /* Aplicar aos inputs de Estado e Cidade */ {
+        .location-fields input[type="text"],
+        .location-fields select /* Aplicar aos inputs de Estado e Cidade e ao select de Estado */ {
             width: 100%; 
             height: 100%; 
             box-sizing: border-box; 
             padding: 10px; 
             border: 1px solid #ddd; 
             border-radius: 4px; 
+            font-size: 1em; /* Consistência de fonte */
+            background-color: #fff; /* Fundo branco */
         }
         .phone-container input[type="tel"]:focus,
-        .location-fields input[type="text"]:focus {
+        .location-fields input[type="text"]:focus,
+        .location-fields select:focus {
             border-color: #1abc9c; 
             box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
             outline: none;
@@ -71,6 +75,10 @@
             color: #ccc;
         }
         ::-ms-input-placeholder { 
+            color: #ccc;
+        }
+        /* Estilo para o option desabilitado do select parecer um placeholder */
+        .location-fields select option[disabled] {
             color: #ccc;
         }
     </style>
@@ -106,7 +114,36 @@
             </div>
             <div class="location-fields">
                 <div class="estado-container">
-                    <input type="text" id="estado" name="estado" placeholder="Estado" required>
+                    <select id="estado" name="estado" required>
+                        <option value="" disabled selected>Estado</option>
+                        <option value="AC">Acre</option>
+                        <option value="AL">Alagoas</option>
+                        <option value="AP">Amapá</option>
+                        <option value="AM">Amazonas</option>
+                        <option value="BA">Bahia</option>
+                        <option value="CE">Ceará</option>
+                        <option value="DF">Distrito Federal</option>
+                        <option value="ES">Espírito Santo</option>
+                        <option value="GO">Goiás</option>
+                        <option value="MA">Maranhão</option>
+                        <option value="MT">Mato Grosso</option>
+                        <option value="MS">Mato Grosso do Sul</option>
+                        <option value="MG">Minas Gerais</option>
+                        <option value="PA">Pará</option>
+                        <option value="PB">Paraíba</option>
+                        <option value="PR">Paraná</option>
+                        <option value="PE">Pernambuco</option>
+                        <option value="PI">Piauí</option>
+                        <option value="RJ">Rio de Janeiro</option>
+                        <option value="RN">Rio Grande do Norte</option>
+                        <option value="RS">Rio Grande do Sul</option>
+                        <option value="RO">Rondônia</option>
+                        <option value="RR">Roraima</option>
+                        <option value="SC">Santa Catarina</option>
+                        <option value="SP">São Paulo</option>
+                        <option value="SE">Sergipe</option>
+                        <option value="TO">Tocantins</option>
+                    </select>
                 </div>
                 <div class="cidade-container">
                     <input type="text" id="cidade" name="cidade" placeholder="Cidade" required>
