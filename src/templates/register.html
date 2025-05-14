@@ -38,6 +38,7 @@
             padding-left: 2px;
             width: 100%; 
             box-sizing: border-box;
+            outline: none; /* Remover outline padrão no foco */
         }
         .phone-container input[type="tel"],
         .location-fields input[type="text"] /* Aplicar aos inputs de Estado e Cidade */ {
@@ -57,7 +58,8 @@
 
         .ddd-input-container:focus-within {
             border-color: #1abc9c; 
-            box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
+            /* box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25); Removido para evitar o quadrado */
+            outline: none; /* Garantir que não haja outline no container também */
         }
 
         /* Estilo para placeholder cinza claro */
