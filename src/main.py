@@ -4,29 +4,42 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import requests
-from flask import Flask, send_from_directory, request, jsonify, render_template # Added render_template
-from src.models import db # Import db from src.models.__init__.py
-from src.models.user import User # Import User model
+from flask import Flask, send_from_directory, request, jsonify, render_template
+from src.models import db 
+from src.models.user import User 
 
 app = Flask(__name__, 
             static_folder=os.path.join(os.path.dirname(__file__), 'static'),
-            template_folder=os.path.join(os.path.dirname(__file__), 'templates')) # Added template_folder
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev_secret_key_for_smartgrana') # Use environment variable for secret key
+            template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev_secret_key_for_smartgrana')
 
-# Database Configuration - Ensure DB_NAME is set in Render's environment variables
+# Database Configuration - Temporarily disable direct DB operations for prototype viewing
 DB_USER = os.getenv('DB_USERNAME', 'root')
 DB_PASSWORD = os.getenv('DB_PASSWORD', 'password')
-DB_HOST = os.getenv('DB_HOST', 'localhost') # This will be Render's internal DB host
+DB_HOST = os.getenv('DB_HOST', 'localhost') 
 DB_PORT = os.getenv('DB_PORT', '3306')
-DB_NAME = os.getenv('DB_NAME', 'smartgrana_db') # IMPORTANT: Use a specific DB name for Render
+DB_NAME = os.getenv('DB_NAME', 'smartgrana_db') 
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db.init_app(app) # Initialize SQLAlchemy with the app
 
-# Create database tables if they don't exist
-with app.app_context():
-    db.create_all() # This will create the 'users' table based on the User model
+# Initialize SQLAlchemy but defer table creation if DB is not ready for prototypes
+# db.init_app(app)
+
+# # Create database tables if they don't exist - Temporarily commented out for prototype viewing
+# # This will be re-enabled when we are ready to connect to a provisioned DB on Render
+# with app.app_context():
+#     try:
+#         db.create_all()
+#     except Exception as e:
+#         app.logger.warning(f"Database connection failed, table creation skipped for prototype viewing: {e}")
+
+# A better approach for Render is to initialize db but not call create_all() here.
+# db.create_all() should be handled by migrations or a one-time setup script.
+# For now, to ensure prototype pages load, we will ensure db.init_app(app) is called,
+# but db.create_all() will be commented out.
+
+db.init_app(app) # Initialize db with app
 
 # Yahoo Finance API base URL
 YAHOO_FINANCE_CHART_API_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
