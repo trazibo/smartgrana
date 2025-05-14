@@ -17,12 +17,6 @@
         .phone-fields .phone-container {
             flex: 1 1 auto; 
         }
-        /* Removido o width genérico para input[type=tel] daqui para evitar conflitos, 
-           já que os inputs de ddd e telefone têm contextos diferentes. 
-           Será tratado dentro de seus containers se necessário. */
-        /* .phone-fields input[type="tel"] {
-            width: calc(100% - 22px); 
-        } */
 
         .ddd-prefix {
             font-size: 1em;
@@ -104,6 +98,12 @@
                 <div class="phone-container">
                     <input type="tel" id="phone" name="phone" pattern="[0-9]{9}" placeholder="Telefone" title="Digite 9 números para o telefone" maxlength="9" required>
                 </div>
+            </div>
+            <div>
+                <input type="text" id="estado" name="estado" placeholder="Estado" required>
+            </div>
+            <div>
+                <input type="text" id="cidade" name="cidade" placeholder="Cidade" required>
             </div>
             <div>
                 <input type="password" id="password" name="password" placeholder="Senha" required>
