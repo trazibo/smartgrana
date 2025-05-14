@@ -8,25 +8,27 @@ body {
 header {
     background-color: #1abc9c;
     color: #ffffff;
-    padding: 1.5em 0;
-    text-align: center;
+    padding: 1em 5%; /* Ajustado para padding lateral */
+    display: flex; /* Habilita Flexbox */
+    justify-content: space-between; /* Espaça o nome do site e o menu */
+    align-items: center; /* Alinha verticalmente ao centro */
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 header h1 {
     margin: 0;
-    font-size: 2.8em;
+    font-size: 2.2em; /* Pode ajustar o tamanho se necessário */
     font-weight: bold;
 }
 nav {
-    background-color: #16a085; /* Slightly darker green for nav background */
-    padding: 0.5em 0;
-    text-align: center;
+    /* background-color: #16a085; Removido pois o nav agora está dentro do header principal */
+    /* padding: 0.5em 0; Removido */
+    /* text-align: center; Removido */
 }
 nav a {
     color: #ffffff;
-    margin: 0 15px;
+    margin: 0 10px; /* Espaçamento entre os links do menu */
     text-decoration: none;
-    font-size: 1.1em;
+    font-size: 1em; /* Pode ajustar o tamanho se necessário */
 }
 nav a:hover {
     text-decoration: underline;
@@ -165,3 +167,20 @@ main section h3 {
     color: #16a085;
     margin-bottom: 0.8em;
 }
+
+/* Responsive adjustments for header */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column; /* Stack title and nav on smaller screens */
+        padding: 1em 5%;
+    }
+    header h1 {
+        margin-bottom: 0.5em; /* Add some space below title */
+        font-size: 2em;
+    }
+    nav a {
+        margin: 0 8px; /* Adjust spacing for smaller screens */
+        font-size: 0.9em;
+    }
+}
+
