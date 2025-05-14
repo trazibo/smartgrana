@@ -11,12 +11,11 @@
             gap: 10px; 
             align-items: flex-end; 
         }
-        /* Ajuste para diminuir os campos de DDD e Telefone */
         .phone-fields .ddd-container {
-            flex: 0 0 100px; /* DDD com largura fixa menor, não cresce, não encolhe */
+            flex: 0 0 100px; 
         }
         .phone-fields .phone-container {
-            flex: 1 1 auto; /* Telefone ocupa o espaço restante */
+            flex: 1 1 auto; 
         }
         .phone-fields input[type="tel"] {
             width: calc(100% - 22px); 
@@ -41,7 +40,18 @@
             border-color: #1abc9c; 
             box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
         }
-
+        /* Estilo para placeholder cinza claro */
+        ::placeholder {
+            color: #ccc; /* Cinza claro */
+            opacity: 1; /* Para garantir que a cor seja aplicada em todos os navegadores */
+        }
+        /* Para navegadores mais antigos que usam prefixos */
+        :-ms-input-placeholder { /* Internet Explorer 10-11 */
+            color: #ccc;
+        }
+        ::-ms-input-placeholder { /* Microsoft Edge */
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
@@ -57,33 +67,27 @@
         <h2>Crie sua Conta</h2>
         <form action="#" method="post"> 
             <div>
-                <label for="name">Nome Completo:</label>
-                <input type="text" id="name" name="name" required>
+                <input type="text" id="name" name="name" placeholder="Nome Completo" required>
             </div>
             <div>
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="email" name="email" placeholder="Email" required>
             </div>
             <div class="phone-fields">
                 <div class="ddd-container">
-                    <label for="ddd">DDD:</label>
                     <div class="ddd-input-container">
                         <span class="ddd-prefix">+</span>
-                        <input type="tel" id="ddd" name="ddd" pattern="[0-9]{2}" placeholder="XX" title="Digite 2 números para o DDD" maxlength="2" required>
+                        <input type="tel" id="ddd" name="ddd" pattern="[0-9]{2}" placeholder="DDD" title="Digite 2 números para o DDD" maxlength="2" required>
                     </div>
                 </div>
                 <div class="phone-container">
-                    <label for="phone">Telefone:</label>
-                    <input type="tel" id="phone" name="phone" pattern="[0-9]{9}" placeholder="XXXXXXXXX" title="Digite 9 números para o telefone" maxlength="9" required>
+                    <input type="tel" id="phone" name="phone" pattern="[0-9]{9}" placeholder="Telefone" title="Digite 9 números para o telefone" maxlength="9" required>
                 </div>
             </div>
             <div>
-                <label for="password">Senha:</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" placeholder="Senha" required>
             </div>
             <div>
-                <label for="confirm_password">Confirmar Senha:</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirmar Senha" required>
             </div>
             <button type="submit">Cadastrar</button>
         </form>
