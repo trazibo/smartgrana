@@ -48,8 +48,8 @@ nav a:hover {
     margin-bottom: 1em;
 }
 main {
-    width: 85%;
-    max-width: 760px; /* Adjusted for forms */
+    width: 60%; /* Adjusted for forms, reduced by approx 30% from 85% */
+    max-width: 530px; /* Adjusted for forms, reduced by approx 30% from 760px */
     margin: 30px auto;
     padding: 25px;
     background-color: #ffffff;
